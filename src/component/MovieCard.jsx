@@ -1,58 +1,85 @@
-import React from 'react'
+import { useState, useEffect } from 'react'
 
-const MovieCard = ({ movie, onSelect }) => {
+const MovieCard = ({ movie, onSelect, onSave, onUpdate, onDelete }) => {
+  const [rating, setRating] = useState(movie.rating || 0)
+  const [comment, setComment] = useState(movie.comment || '')
   
-  const handleSave = async (e) => {
+  useEffect(() => {
+    setRating(movie.rating || 0)
+    setComment(movie.comment || '')
+  }, [movie])
+  
+  // Si le film a un ID, c'est qu'il vient de notre base de données (json-server)
+  const isSaved = movie.id !== undefined
+
+  const handleAction = (e) => {
     e.stopPropagation() // Empêche le clic sur la carte (qui ouvre les détails)
-    try {
-      await fetch('http://localhost:3000/movies', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(movie)
-      })
-      alert(`${movie.Title} a été enregistré !`)
-    } catch (error) {
-      console.error("Erreur lors de l'enregistrement :", error)
-      alert("Erreur : Assurez-vous que json-server tourne sur le port 3000")
+    const movieData = { ...movie, rating, comment }
+    
+    if (isSaved) {
+      onUpdate(movieData)
+    } else {
+      onSave(movieData)
     }
+  }
+
+  const handleDelete = (e) => {
+    e.stopPropagation()
+    onDelete(movie.id)
   }
 
   return (
     <div 
+      className="movie-card"
       onClick={() => onSelect(movie.imdbID)}
-      style={{ 
-        border: '1px solid #ddd', 
-        borderRadius: '8px', 
-        padding: '10px', 
-        textAlign: 'center',
-        cursor: 'pointer',
-        backgroundColor: '#fff',
-        transition: 'transform 0.2s'
-      }}
     >
       <img 
+        className="movie-poster"
         src={movie.Poster !== 'N/A' ? movie.Poster : 'https://via.placeholder.com/200'} 
         alt={movie.Title} 
-        style={{ maxWidth: '100%', height: 'auto', borderRadius: '4px' }} 
       />
-      <h3 style={{ fontSize: '1.1rem', margin: '10px 0' }}>{movie.Title}</h3>
-      <p style={{ color: '#666' }}>{movie.Year}</p>
-      <button 
-        onClick={handleSave}
-        style={{
-          marginTop: '10px',
-          padding: '8px 16px',
-          backgroundColor: '#27ae60',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer'
-        }}
-      >
-        Enregistrer
-      </button>
+      <div className="movie-info">
+        <h3 className="movie-title">{movie.Title}</h3>
+        <p className="movie-year">{movie.Year}</p>
+      
+        <div className="rating-stars" onClick={(e) => e.stopPropagation()}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <span 
+              key={star} 
+              onClick={() => setRating(star)}
+              className={`star ${star <= rating ? 'active' : ''}`}
+            >
+              ★
+            </span>
+          ))}
+        </div>
+
+        <textarea 
+          className="comment-area"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          placeholder="Votre commentaire..."
+        />
+
+        <div className="card-actions">
+          <button 
+            className="action-btn btn-save"
+            onClick={handleAction}
+          >
+            {isSaved ? 'Mettre à jour' : 'Enregistrer'}
+          </button>
+
+          {isSaved && (
+            <button 
+              className="action-btn btn-delete"
+              onClick={handleDelete}
+            >
+              Supprimer
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

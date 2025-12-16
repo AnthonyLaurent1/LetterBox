@@ -1,62 +1,113 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 
-const MovieDetail = ({ movie, onClose }) => {
+const MovieDetail = ({ movie, savedMovies, onClose, onSave, onDelete }) => {
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+
+  useEffect(() => {
+    if (movie) {
+      // Vérifier si le film est déjà sauvegardé
+      const savedMovie = savedMovies.find(m => m.imdbID === movie.imdbID)
+      if (savedMovie) {
+        setRating(savedMovie.rating || 0)
+        setComment(savedMovie.comment || '')
+      } else {
+        setRating(0)
+        setComment('')
+      }
+    }
+  }, [movie, savedMovies])
+
   if (!movie) return null
 
+  const isSaved = savedMovies.some(m => m.imdbID === movie.imdbID)
+
+  const handleSave = () => {
+    const movieData = {
+      ...movie,
+      rating,
+      comment
+    }
+    onSave(movieData)
+  }
+
+  const handleDelete = () => {
+    if (confirm("Voulez-vous vraiment supprimer ce film ?")) {
+      onDelete(movie.imdbID)
+    }
+  }
+
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.8)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '2rem',
-        borderRadius: '8px',
-        maxWidth: '800px',
-        width: '90%',
-        maxHeight: '90vh',
-        overflowY: 'auto',
-        position: 'relative',
-        display: 'flex',
-        gap: '20px',
-        flexWrap: 'wrap'
-      }}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <button 
+          className="modal-close"
           onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            background: 'transparent',
-            border: 'none',
-            fontSize: '1.5rem',
-            cursor: 'pointer'
-          }}
         >
           ✖
         </button>
 
         <img 
+          className="modal-poster"
           src={movie.Poster !== 'N/A' ? movie.Poster : 'https://via.placeholder.com/300'} 
           alt={movie.Title}
-          style={{ maxWidth: '300px', width: '100%', objectFit: 'contain' }}
         />
 
-        <div style={{ flex: 1, minWidth: '300px' }}>
-          <h2 style={{ marginTop: 0 }}>{movie.Title} ({movie.Year})</h2>
-          <p><strong>Genre:</strong> {movie.Genre}</p>
+        <div className="modal-details">
+          <h2>{movie.Title}</h2>
+          <div className="modal-meta">
+            <span>{movie.Year}</span>
+            <span>{movie.Genre}</span>
+            <span>⭐ {movie.imdbRating}</span>
+          </div>
+          
+          <p className="modal-plot">{movie.Plot}</p>
+          
           <p><strong>Réalisateur:</strong> {movie.Director}</p>
           <p><strong>Acteurs:</strong> {movie.Actors}</p>
-          <p><strong>Note IMDB:</strong> {movie.imdbRating}</p>
-          <p style={{ marginTop: '1rem', lineHeight: '1.6' }}>{movie.Plot}</p>
+
+          {/* Section pour noter et commenter */}
+          <div className="rating-section">
+            <h3>Ma note</h3>
+            <div className="rating-stars" onClick={(e) => e.stopPropagation()}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span 
+                  key={star} 
+                  onClick={() => setRating(star)}
+                  className={`star ${star <= rating ? 'active' : ''}`}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+
+            <h3>Mon commentaire</h3>
+            <textarea 
+              className="comment-area"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              placeholder="Votre commentaire sur ce film..."
+            />
+
+            <div className="card-actions">
+              <button 
+                className="action-btn btn-save"
+                onClick={handleSave}
+              >
+                {isSaved ? 'Mettre à jour' : 'Enregistrer'}
+              </button>
+
+              {isSaved && (
+                <button 
+                  className="action-btn btn-delete"
+                  onClick={handleDelete}
+                >
+                  Supprimer
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
